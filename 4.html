@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DK traveler - 海南专属旅行计划</title>
+    <!-- 引入axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft Yahei', sans-serif;
+        }
+        /* 背景层 - 海南风景图全屏覆盖 */
+        body {
+            background: url('https://img0.baidu.com/it/u=1078290220,3825252339&fm=253&fmt=auto&app=138&f=JPEG?w=889&h=500') no-repeat center center fixed;
+            background-size: cover; /* 背景图自适应全屏 */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 背景图暗化，突出登录卡片 */
+            position: relative;
+        }
+        /* 背景遮罩层 - 提升文字可读性 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3); /* 半透明黑色遮罩 */
+            z-index: 1;
+        }
+        /* ===================== 新增：帮助按钮样式 ===================== */
+        .help-btn {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .help-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            background-color: #f8fafc;
+        }
+        
+        .help-btn i {
+            font-size: 24px;
+            color: #3182ce;
+        }
+        /* 登录卡片 - 磨砂玻璃效果+层次感 */
+        .login-card {
+            background-color: rgba(255, 255, 255, 0.9); /* 半透明白色 */
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            -webkit-backdrop-filter: blur(10px); /* 兼容苹果浏览器 */
+            padding: 45px 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* 更柔和的阴影 */
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid rgba(255, 255, 255, 0.2); /* 细边框增加质感 */
+            position: relative;
+            z-index: 2; /* 高于背景遮罩 */
+        }
+        /* 标题样式优化 */
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        /* 副标题样式 */
+        .login-subtitle {
+            text-align: center;
+            color: #4a5568;
+            font-size: 16px;
+            font-weight: 400;
+            width: 100%;
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+        /* 输入框组 - 更精致的样式 */
+        .input-group {
+            margin-bottom: 22px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        /* 输入框聚焦效果 */
+        .input-group input:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+            background-color: white;
+        }
+        /* 输入框占位符样式 */
+        .input-group input::placeholder {
+            color: #a0aec0;
+            font-size: 15px;
+        }
+        /* ===================== 新增：忘记密码链接样式 ===================== */
+        .forgot-password {
+            text-align: right;
+            margin-top: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .forgot-password a {
+            color: #3182ce;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .forgot-password a:hover {
+            color: #2b6cb0;
+            text-decoration: underline;
+        }
+        /* 按钮组（登录+注册） */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .login-btn, .register-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+        /* 登录按钮 - 旅行蓝主色调 */
+        .login-btn {
+            background-color: #3182ce;
+            color: white;
+        }
+        .login-btn:hover {
+            background-color: #2b6cb0;
+            transform: translateY(-2px); /* 轻微上移，增加交互感 */
+            box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+        }
+        /* 注册按钮 - 清新绿 */
+        .register-btn {
+            background-color: #38a169;
+            color: white;
+        }
+        .register-btn:hover {
+            background-color: #2f855a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+        }
+        /* 提示信息 */
+        .message {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .error-message {
+            color: #e53e3e;
+            background-color: rgba(229, 62, 62, 0.08);
+        }
+        .success-message {
+            color: #38a169;
+            background-color: rgba(56, 161, 105, 0.08);
+        }
+        /* 测试模式提示 */
+        .test-tip {
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+            margin-top: 15px;
+            opacity: 0.8;
+        }
+        /* ===================== 新增：模态框样式 ===================== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px; /* 比登录卡片大，比整个页面小 */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .close-modal:hover {
+            background-color: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .submit-btn, .cancel-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn {
+            background-color: #3182ce;
+            color: white;
+        }
+        
+        .submit-btn:hover {
+            background-color: #2b6cb0;
+        }
+        
+        .cancel-btn {
+            background-color: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #cbd5e0;
+        }
+        /* ===================== 新增：帮助内容样式 ===================== */
+        .help-content {
+            padding: 0 10px;
+        }
+        
+        .help-section {
+            margin-bottom: 25px;
+        }
+        
+        .help-section h3 {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #3182ce;
+            display: inline-block;
+        }
+        
+        .help-section p {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        
+        .help-list {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .help-list li {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .contact-info {
+            background-color: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #3182ce;
+        }
+        
+        .contact-info p {
+            margin-bottom: 5px;
+        }
+        
+        .help-tip {
+            background-color: #fff9db;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            border-left: 4px solid #ffd43b;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===================== 新增：帮助按钮 ===================== -->
+    <div class="help-btn" onclick="showHelpModal()">
+        <i class="fas fa-question-circle"></i>
+    </div>
+    
+    <div class="login-card">
+        <h2>DK Travel 海南</h2>
+        <div class="login-subtitle">即刻登录，解锁您的个性化海南之旅！</div>
+        <div class="input-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入你的专属用户名">
+        </div>
+        <div class="input-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="请输入你的密码">
+            <!-- ===================== 新增：忘记密码链接 ===================== -->
+            <div class="forgot-password">
+                <a href="javascript:void(0)" onclick="showForgotPasswordModal()">忘记密码？</a>
+            </div>
+        </div>
+        <!-- 登录+注册按钮组 -->
+        <div class="btn-group">
+            <button class="login-btn" onclick="handleLogin()">登录</button>
+            <button class="register-btn" onclick="handleRegister()">注册</button>
+        </div>
+        <!-- 提示信息 -->
+        <div class="message error-message" id="errorMsg"></div>
+        <div class="message success-message" id="successMsg"></div>
+        <!-- 测试模式提示 -->
+        <div class="test-tip">💡 测试模式：未调用真实接口 | 联调时关闭TEST_MODE</div>
+    </div>
+
+    <!-- ===================== 新增：忘记密码模态框 ===================== -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">重置密码</h3>
+                <button class="close-modal" onclick="closeForgotPasswordModal()">&times;</button>
+            </div>
+            <div class="input-group">
+                <label for="resetEmail">注册邮箱</label>
+                <input type="email" id="resetEmail" placeholder="请输入注册时使用的邮箱地址">
+            </div>
+            <div class="input-group">
+                <label for="usernameForReset">用户名（可选）</label>
+                <input type="text" id="usernameForReset" placeholder="请输入用户名（如果记得）">
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeForgotPasswordModal()">取消</button>
+                <button class="submit-btn" onclick="handleForgotPassword()">发送重置邮件</button>
+            </div>
+            <div class="message error-message" id="modalErrorMsg"></div>
+            <div class="message success-message" id="modalSuccessMsg"></div>
+        </div>
+    </div>
+
+    <!-- ===================== 新增：帮助模态框 ===================== -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">登录帮助中心</h3>
+                <button class="close-modal" onclick="closeHelpModal()">&times;</button>
+            </div>
+            <div class="help-content">
+                <!-- 常见问题部分 -->
+                <div class="help-section">
+                    <h3>常见登录问题</h3>
+                    <p>如果您在登录过程中遇到问题，请先查看以下常见问题及解决方法：</p>
+                    <ul class="help-list">
+                        <li><strong>忘记用户名或密码：</strong>点击登录框下方的"忘记密码？"链接，按照提示重置密码。</li>
+                        <li><strong>用户名或密码错误：</strong>请检查大小写是否正确，确保没有多余的空格。</li>
+                        <li><strong>账户被锁定：</strong>连续5次输入错误密码会导致账户暂时锁定，请等待15分钟后重试。</li>
+                        <li><strong>无法收到验证邮件：</strong>请检查垃圾邮件文件夹，或将我们的邮箱添加至白名单。</li>
+                        <li><strong>页面加载缓慢或卡顿：</strong>请检查网络连接，或尝试刷新页面。</li>
+                        <li><strong>浏览器兼容性问题：</strong>建议使用Chrome、Firefox或Edge浏览器的最新版本。</li>
+                    </ul>
+                </div>
+                
+                <!-- 注册问题部分 -->
+                <div class="help-section">
+                    <h3>注册相关问题</h3>
+                    <ul class="help-list">
+                        <li><strong>用户名已被占用：</strong>请尝试使用其他用户名，或添加数字、字母组合。</li>
+                        <li><strong>密码强度不足：</strong>密码应至少包含8个字符，包括字母和数字。</li>
+                        <li><strong>邮箱验证问题：</strong>注册后请及时查收验证邮件，点击链接完成验证。</li>
+                        <li><strong>注册后无法登录：</strong>请确认已完成邮箱验证，如未收到邮件可尝试重新发送。</li>
+                    </ul>
+                </div>
+                
+                <!-- 密码安全部分 -->
+                <div class="help-section">
+                    <h3>密码安全提示</h3>
+                    <ul class="help-list">
+                        <li>请不要使用过于简单的密码（如123456、password等）。</li>
+                        <li>建议定期更换密码，提高账户安全性。</li>
+                        <li>不要在公共设备上保存登录信息。</li>
+                        <li>如发现账户异常，请立即修改密码并联系我们。</li>
+                    </ul>
+                </div>
+                
+                <!-- 联系信息部分 -->
+                <div class="contact-info">
+                    <h3>需要进一步帮助？</h3>
+                    <p>如果以上方法无法解决您的问题，请联系我们的客服团队：</p>
+                    <p><strong>客服邮箱：</strong> support@dktravel-hainan.com</p>
+                    <p><strong>客服热线：</strong> 400-888-8888（工作日 9:00-18:00）</p>
+                    <p><strong>微信客服：</strong> DKTravel-HN（扫描二维码添加）</p>
+                </div>
+                
+                <!-- 温馨提示 -->
+                <div class="help-tip">
+                    <p><strong>💡 温馨提示：</strong> 为保障您的账户安全，请勿将用户名和密码告知他人。DK Travel承诺绝不会通过电话或邮件向您索要密码。</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeHelpModal()">关闭帮助</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== 核心配置 =====================
+        // 测试模式开关：前后端未调试时设为true，调试完成后改为false
+        const TEST_MODE = true;
+        // 本地接口地址（调试时使用）
+        const API = {
+            login: 'http://localhost:8888/login',
+            register: 'http://localhost:8888/register',
+            forgotPassword: 'http://localhost:8888/forgot-password' // 新增：忘记密码接口
+        };
+
+        // ===================== 工具函数 =====================
+        // 显示提示信息
+        function showMessage(elId, text) {
+            // 隐藏所有提示
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+            // 显示目标提示
+            const el = document.getElementById(elId);
+            el.textContent = text;
+            el.style.display = 'block';
+            // 3秒后自动隐藏
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // ===================== 新增：模态框工具函数 =====================
+        // 显示模态框提示信息
+        function showModalMessage(text, isSuccess = false) {
+            const modal = document.getElementById('forgotPasswordModal');
+            const errorEl = modal.querySelector('#modalErrorMsg');
+            const successEl = modal.querySelector('#modalSuccessMsg');
+            
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            
+            const targetEl = isSuccess ? successEl : errorEl;
+            targetEl.textContent = text;
+            targetEl.style.display = 'block';
+            
+            setTimeout(() => targetEl.style.display = 'none', 3000);
+        }
+
+        // ===================== 新增：帮助模态框控制函数 =====================
+        // 显示帮助模态框
+        function showHelpModal() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        // 关闭帮助模态框
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // ===================== 忘记密码模态框控制函数 =====================
+        // 显示忘记密码模态框
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'flex';
+        }
+
+        // 关闭忘记密码模态框
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+            // 清空输入框
+            document.getElementById('resetEmail').value = '';
+            document.getElementById('usernameForReset').value = '';
+            // 清空提示信息
+            const modal = document.getElementById('forgotPasswordModal');
+            modal.querySelector('#modalErrorMsg').style.display = 'none';
+            modal.querySelector('#modalSuccessMsg').style.display = 'none';
+        }
+
+        // ===================== 忘记密码功能 =====================
+        async function handleForgotPassword() {
+            const email = document.getElementById('resetEmail').value.trim();
+            const username = document.getElementById('usernameForReset').value.trim();
+
+            // 邮箱验证
+            if (!email) {
+                showModalMessage('请输入注册邮箱', false);
+                return;
+            }
+
+            // 简单的邮箱格式验证
+            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showModalMessage('请输入有效的邮箱地址', false);
+                return;
+            }
+
+            // 测试模式：不调用真实接口，模拟发送重置邮件
+            if (TEST_MODE) {
+                showModalMessage(`重置链接已发送至 ${email}，请检查您的邮箱。`, true);
+                // 3秒后关闭模态框
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                    showMessage('successMsg', '请检查您的邮箱完成密码重置');
+                }, 3000);
+                return;
+            }
+
+            // 真实接口调用（调试后端后启用）
+            try {
+                const response = await axios.post(API.forgotPassword, {
+                    email: email,
+                    username: username || null
+                });
+                
+                // 适配后端返回格式（根据实际情况调整）
+                if (response.data.code === 200) {
+                    showModalMessage('重置链接已发送，请检查您的邮箱', true);
+                    setTimeout(() => {
+                        closeForgotPasswordModal();
+                        showMessage('successMsg', '请检查您的邮箱完成密码重置');
+                    }, 3000);
+                } else {
+                    showModalMessage(response.data.msg || '发送失败，请重试', false);
+                }
+            } catch (error) {
+                showModalMessage('网络错误/接口未启动，请检查后端服务', false);
+                console.log('忘记密码接口错误详情：', error);
+            }
+        }
+
+        // ===================== 登录功能 =====================
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // 非空验证
+            if (!username || !password) {
+                showMessage('errorMsg', '用户名和密码不能为空');
+                return;
+            }
+
+            // 测试模式：不调用真实接口，模拟登录
+            if (TEST_MODE) {
+                showMessage('successMsg', `登录成功！即将为你定制海南旅行计划`);
+                // 模拟保存token
+                localStorage.setItem('token', 'test_token_123456');
+                // 模拟跳转（注释掉，避免误跳转）
+                // window.location.href = '/home.html';
+                return;
+            }
+
+            // 真实接口调用（调试后端后启用）
+            try {
+                const response = await axios.post(API.login, {
+                    username: username,
+                    password: password
+                });
+                // 适配后端返回格式（根据实际情况调整）
+                if (response.data.code === 200) {
+                    showMessage('successMsg', '登录成功！即将跳转...');
+                    localStorage.setItem('token', response.data.data.token);
+                    setTimeout(() => window.location.href = '/home.html', 1500);
+                } else {
+                    showMessage('errorMsg', response.data.msg || '登录失败，请重试');
+                }
+            } catch (error) {
+                showMessage('errorMsg', '网络错误/接口未启动，请检查后端服务');
+                console.log('登录接口错误详情：', error);
+            }
+        }
+
+        // ===================== 注册功能 =====================
+        async function handleRegister() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // 非空验证
+            if (!username || !password) {
+                showMessage('errorMsg', '用户名和密码不能为空');
+                return;
+            }
+
+            // 测试模式：不调用真实接口，模拟注册
+            if (TEST_MODE) {
+                showMessage('successMsg', `注册成功！快去探索海南美景吧`);
+                return;
+            }
+
+            // 真实接口调用（调试后端后启用）
+            try {
+                const response = await axios.post(API.register, {
+                    username: username,
+                    password: password
+                });
+                // 适配后端返回格式（根据实际情况调整）
+                if (response.data.code === 200) {
+                    showMessage('successMsg', '注册成功！请登录');
+                } else {
+                    showMessage('errorMsg', response.data.msg || '注册失败，请重试');
+                }
+            } catch (error) {
+                showMessage('errorMsg', '网络错误/接口未启动，请检查后端服务');
+                console.log('注册接口错误详情：', error);
+            }
+        }
+
+        // ===================== 新增：点击模态框外部关闭功能 =====================
+        window.onclick = function(event) {
+            const forgotModal = document.getElementById('forgotPasswordModal');
+            const helpModal = document.getElementById('helpModal');
+            
+            if (event.target === forgotModal) {
+                closeForgotPasswordModal();
+            }
+            
+            if (event.target === helpModal) {
+                closeHelpModal();
+            }
+        }
+
+        // ===================== 新增：ESC键关闭模态框 =====================
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeForgotPasswordModal();
+                closeHelpModal();
+            }
+        });
+    </script>
+</body>
+</html>
