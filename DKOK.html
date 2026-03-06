@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DK traveler - 海南专属旅行计划</title>
+    <!-- 引入axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===================== 全屏背景轮播 ===================== */
+        .background-slideshow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* 背景层 - 确保居中 */
+        body {
+            height: 100vh; /* 强制全屏高度 */
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* 垂直居中 */
+            position: relative;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        /* 背景遮罩 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.15);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 语言切换按钮 - iOS 26 风格 */
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            padding: 10px 18px;
+            border-radius: 100px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: white;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .lang-switch:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* 帮助按钮 */
+        .help-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px; 
+            width: 48px;
+            height: 48px;
+            background-color: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .help-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .help-btn i {
+            font-size: 20px;
+            color: white;
+            font-weight: 300;
+        }
+
+        /* 探索按钮 */
+        .explore-btn {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 56px;
+            padding: 0 28px;
+            background-color: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border-radius: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: white;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .explore-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        /* ===================== iOS 26 玻璃态登录卡 ===================== */
+        .login-card {
+            /* iOS 26 轻薄玻璃感 */
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(80px) saturate(180%);
+            -webkit-backdrop-filter: blur(80px) saturate(180%);
+            
+            /* 极细边框 */
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            border-left: 1px solid rgba(255, 255, 255, 0.35);
+            
+            padding: 48px 36px;
+            border-radius: 40px; /* 更大的圆角 */
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+            z-index: 2;
+            
+            /* 确保自身内容居中 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 6px;
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 15px;
+            font-weight: 400;
+            width: 100%;
+            margin-bottom: 40px;
+            line-height: 1.4;
+        }
+
+        /* 输入框区域 */
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-left: 8px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 18px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            font-size: 17px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .forgot-password {
+            text-align: right;
+            width: 100%;
+            margin-top: 4px;
+            margin-bottom: 28px;
+        }
+        
+        .forgot-password a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        
+        .forgot-password a:hover {
+            color: white;
+        }
+
+        /* ===================== 超大主按钮 ===================== */
+        .btn-group {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 19px;
+            border: none;
+            border-radius: 20px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            letter-spacing: 0.3px;
+            /* iOS 26 新版蓝色 */
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3);
+        }
+
+        .login-btn:active {
+            transform: scale(0.96);
+            filter: brightness(0.9);
+        }
+
+        .message {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+            padding: 12px 16px;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.25);
+            color: white;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-tip {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 32px;
+            border-radius: 32px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: bounceUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 1001;
+        }
+        
+        @keyframes bounceUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+        
+        .close-modal {
+            background: #f2f2f7;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #86868b;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .close-modal:hover {
+            background: #e5e5ea;
+            color: #1d1d1f;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .submit-btn, .cancel-btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .submit-btn {
+            background-color: #007AFF;
+            color: white;
+        }
+        
+        .cancel-btn {
+            background-color: #f2f2f7;
+            color: #007AFF;
+        }
+
+        /* 帮助内容 */
+        .help-content { padding: 0 5px; color: #1d1d1f; }
+        .help-section { margin-bottom: 20px; }
+        .help-section h3 {
+            font-size: 16px;
+            color: #1d1d1f;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .help-section p { color: #48484a; line-height: 1.6; font-size: 14px; }
+        .contact-info { background-color: #f2f2f7; padding: 16px; border-radius: 16px; margin-top: 10px; }
+
+        /* 画廊 */
+        .gallery-modal {
+            background-color: rgba(0, 0, 0, 1);
+            z-index: 2000;
+        }
+
+        .gallery-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .gallery-img-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gallery-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+
+        /* 液态玻璃风格的画廊导航按钮 */
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 64px;
+            height: 64px;
+            background-color: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            opacity: 0.8;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            font-size: 24px;
+            color: white;
+        }
+
+        .gallery-nav:hover { 
+            opacity: 1; 
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-50%) scale(1.08);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .gallery-nav:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        .gallery-prev { left: 20px; }
+        .gallery-next { right: 20px; }
+
+        .gallery-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2001;
+            font-weight: 300;
+            font-size: 24px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .gallery-close:hover {
+            background-color: rgba(255,255,255,0.2);
+            transform: scale(1.08);
+        }
+
+        .gallery-counter {
+            position: absolute;
+            bottom: 40px;
+            color: white;
+            font-size: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 全屏背景轮播 -->
+    <div class="background-slideshow" id="slideshow">
+        <!-- 图片将通过JS动态插入 -->
+    </div>
+
+    <!-- 语言切换按钮 -->
+    <div class="lang-switch" onclick="toggleLanguage()">
+        <i class="fas fa-globe"></i>
+        <span id="lang-text">EN</span>
+    </div>
+
+    <!-- 探索按钮 -->
+    <div class="explore-btn" onclick="openGallery()">
+        <i class="fas fa-compass"></i>
+        <span id="explore-text">探索海南</span>
+    </div>
+
+    <!-- 帮助按钮 -->
+    <div class="help-btn" onclick="showHelpModal()">
+        <i class="fas fa-question"></i>
+    </div>
+    
+    <div class="login-card">
+        <h2 id="main-title">DK Travel</h2>
+        <div class="login-subtitle" id="sub-title">开启您的海南专属旅程</div>
+        <div class="input-group">
+            <label for="username" id="label-username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="input-group">
+            <label for="password" id="label-password">密码</label>
+            <input type="password" id="password" placeholder="请输入密码">
+            <div class="forgot-password">
+                <a href="javascript:void(0)" onclick="showForgotPasswordModal()" id="link-forgot">忘记密码？</a>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="login-btn" onclick="handleLogin()" id="btn-login">进入</button>
+        </div>
+        <div class="message" id="msg"></div>
+        <div class="test-tip" id="test-tip">如果您是首次登录，我们将自动为您创建账号</div>
+    </div>
+
+    <!-- 忘记密码模态框 -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="fp-title">重置密码</h3>
+                <button class="close-modal" onclick="closeForgotPasswordModal()">&times;</button>
+            </div>
+            <div class="input-group" style="color: #333;">
+                <label for="resetEmail" style="color: #1d1d1f;">邮箱地址</label>
+                <input type="email" id="resetEmail" placeholder="name@example.com" style="background: #f2f2f7; color: #333; border: none;">
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeForgotPasswordModal()" id="fp-cancel">取消</button>
+                <button class="submit-btn" onclick="handleForgotPassword()" id="fp-submit">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助模态框 -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="help-title">帮助</h3>
+                <button class="close-modal" onclick="closeHelpModal()">&times;</button>
+            </div>
+            <div class="help-content" id="help-content-area">
+                <div class="help-section">
+                    <h3>如何开始？</h3>
+                    <p>输入任意用户名和密码即可。如果是第一次访问，系统会自动为您注册。</p>
+                </div>
+                <div class="contact-info">
+                    <p style="margin:0;"><strong>客服邮箱</strong></p>
+                    <p style="margin:5px 0 0 0;">support@dktravel-hainan.com</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="submit-btn" onclick="closeHelpModal()" id="help-close-btn">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全屏图片画廊 -->
+    <div id="galleryModal" class="modal gallery-modal">
+        <span class="gallery-close" onclick="closeGallery()">&times;</span>
+        <div class="gallery-container">
+            <span class="gallery-nav gallery-prev" onclick="changeSlide(-1)">&#10094;</span>
+            <div class="gallery-img-container">
+                <img class="gallery-img" id="galleryMainImg" src="">
+            </div>
+            <span class="gallery-nav gallery-next" onclick="changeSlide(1)">&#10095;</span>
+            <div class="gallery-counter" id="galleryCounter">1 / 5</div>
+        </div>
+    </div>
+
+    <script>
+        // 新增这一行（核心修复），放在JS最顶部
+    function showHelpModal() {
+        document.getElementById('helpModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+        // ===================== 多语言配置 =====================
+        const i18n = {
+            zh: {
+                'main-title': 'DK Travel',
+                'sub-title': '开启您的海南专属旅程',
+                'label-username': '用户名',
+                'label-password': '密码',
+                'link-forgot': '忘记密码？',
+                'btn-login': '进入',
+                'test-tip': '如果您是首次登录，我们将为您创建账号',
+                'explore-text': '探索海南',
+                'fp-title': '重置密码',
+                'fp-cancel': '取消',
+                'fp-submit': '发送',
+                'help-title': '帮助',
+                'help-close-btn': '知道了'
+            },
+            en: {
+                'main-title': 'DK Travel',
+                'sub-title': 'Begin your Hainan journey',
+                'label-username': 'Username',
+                'label-password': 'Password',
+                'link-forgot': 'Forgot Password?',
+                'btn-login': 'Enter',
+                'test-tip': 'If this is your first login,we will register an account for you',
+                'explore-text': 'Explore Hainan',
+                'fp-title': 'Reset Password',
+                'fp-cancel': 'Cancel',
+                'fp-submit': 'Send',
+                'help-title': 'Help',
+                'help-close-btn': 'Got it'
+            }
+        };
+
+        let currentLang = localStorage.getItem('dk_lang') || 'zh';
+
+        // ===================== 图片库：已更新=====================
+        const hainanImages = [
+            { url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920', title: 'Resort' },
+            { url: 'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?w=1920', title: 'Pool' },
+            { url: 'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1', title: '三亚海棠湾度假酒店' },
+            { url: 'https://images.pexels.com/photos/1450351/pexels-photo-1450351.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1', title: '三亚蜈支洲岛' },
+            { url: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1', title: '三亚天涯海角' },
+        ];
+
+        let currentGalleryIndex = 0;
+        let slideIndex = 0;
+
+        // ===================== 初始化 =====================
+        document.addEventListener('DOMContentLoaded', () => {
+            initSlideshow();
+            updateLanguage();
+            startSlideshow();
+        });
+
+        // ===================== 语言切换 =====================
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('dk_lang', currentLang);
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const lang = i18n[currentLang];
+            Object.keys(lang).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) el.innerText = lang[key];
+            });
+            document.getElementById('lang-text').innerText = currentLang === 'zh' ? 'EN' : '中';
+            document.getElementById('username').placeholder = currentLang === 'zh' ? '请输入用户名' : 'Username';
+            document.getElementById('password').placeholder = currentLang === 'zh' ? '请输入密码' : 'Password';
+        }
+
+        // ===================== 背景轮播 =====================
+        function initSlideshow() {
+            const container = document.getElementById('slideshow');
+            hainanImages.forEach((img, index) => {
+                const div = document.createElement('div');
+                div.className = `slide ${index === 0 ? 'active' : ''}`;
+                div.style.backgroundImage = `url(${img.url})`;
+                container.appendChild(div);
+            });
+        }
+
+        function startSlideshow() {
+            setInterval(() => {
+                const slides = document.getElementsByClassName('slide');
+                slides[slideIndex].classList.remove('active');
+                slideIndex = (slideIndex + 1) % slides.length;
+                slides[slideIndex].classList.add('active');
+            }, 6000);
+        }
+
+        // ===================== 全屏画廊 =====================
+        function openGallery() {
+            document.getElementById('galleryModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            setCurrentSlide(0);
+        }
+
+        function closeGallery() {
+            document.getElementById('galleryModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function changeSlide(n) {
+            setCurrentSlide(currentGalleryIndex + n);
+        }
+
+        function setCurrentSlide(n) {
+            if (n >= hainanImages.length) currentGalleryIndex = 0;
+            else if (n < 0) currentGalleryIndex = hainanImages.length - 1;
+            else currentGalleryIndex = n;
+
+            document.getElementById('galleryMainImg').src = hainanImages[currentGalleryIndex].url;
+            document.getElementById('galleryCounter').innerText = `${currentGalleryIndex + 1} / ${hainanImages.length}`;
+        }
+
+        // ===================== 业务逻辑 =====================
+        const TEST_MODE = true;
+
+        function showMessage(text, isError = false) {
+            const el = document.getElementById('msg');
+            el.textContent = text;
+            el.style.display = 'block';
+            el.style.background = isError ? 'rgba(255,0,0,0.2)' : 'rgba(0,0,0,0.25)';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+        function showForgotPasswordModal() { document.getElementById('forgotPasswordModal').style.display = 'flex'; }
+        function closeForgotPasswordModal() { document.getElementById('forgotPasswordModal').style.display = 'none'; }
+
+        async function handleForgotPassword() {
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!email) return;
+            if (TEST_MODE) {
+                alert(currentLang === 'zh' ? '重置链接已发送至您的邮箱！' : 'Reset link sent!');
+                closeForgotPasswordModal();
+            }
+        }
+
+        // 统一登录/注册逻辑
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showMessage(currentLang === 'zh' ? '请输入用户名和密码' : 'Please enter credentials', true);
+                return;
+            }
+
+            const btn = document.getElementById('btn-login');
+            const originalText = btn.innerText;
+            btn.innerText = currentLang === 'zh' ? '载入中...' : 'Loading...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                const successMsg = currentLang === 'zh' ? '欢迎！正在规划您的海南之旅...' : 'Welcome! Preparing your trip...';
+                showMessage(successMsg, false);
+                localStorage.setItem('dk_user', username);
+            }, 1000);
+        }
+
+        // 关闭模态框
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                if(event.target.id !== 'galleryModal') document.body.style.overflow = 'auto';
+            }
+        }
+
+        // ESC快捷键
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeForgotPasswordModal();
+                closeHelpModal();
+                closeGallery();
+            }
+            if (document.getElementById('galleryModal').style.display === 'flex') {
+                if (event.key === 'ArrowLeft') changeSlide(-1);
+                if (event.key === 'ArrowRight') changeSlide(1);
+            }
+        });
+    </script>
+</body>
+</html>
