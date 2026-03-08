@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DK traveler - 海南专属旅行计划</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* 原有样式保持不变，此处省略 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Microsoft YaHei', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a2980, #26d0ce);
+      overflow: hidden;
+      position: relative;
+    }
+    /* 全屏背景轮播 */
+    .slideshow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.5s ease-in-out;
+    }
+    .slide.active {
+      opacity: 1;
+    }
+    /* 语言切换按钮 */
+    .lang-switch {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 30px;
+      padding: 8px 15px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .lang-switch:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* 帮助按钮 */
+    .help-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      width: 45px;
+      height: 45px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+    .help-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* 探索按钮 */
+    .explore-btn {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 30px;
+      padding: 12px 30px;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+    .explore-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* iOS 26 玻璃态登录卡 */
+    .login-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(50px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 26px;
+      padding: 40px 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+    .login-card h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .input-group input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .input-group input:focus {
+      border-color: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .forgot-password {
+      text-align: right;
+      margin-bottom: 25px;
+    }
+    .forgot-password a {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .forgot-password a:hover {
+      color: white;
+      text-decoration: underline;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .login-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    /* 新增：试用文字样式 */
+    .trial-text {
+      text-align: center;
+      margin-top: 15px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .trial-text:hover {
+      color: white;
+      text-decoration: underline;
+    }
+    /* 模态框通用样式 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(50px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 26px;
+      padding: 30px;
+      width: 90%;
+      max-width: 400px;
+      color: white;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+    }
+    .modal-header {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .help-content p {
+      margin-bottom: 15px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    /* 忘记密码模态框 */
+    .reset-input {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      margin-bottom: 20px;
+    }
+    .reset-input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    /* 图片画廊模态框 */
+    .gallery-modal {
+      background: rgba(0, 0, 0, 0.85);
+    }
+    .gallery-content {
+      width: 95%;
+      max-width: 1200px;
+      height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: transparent;
+      border: none;
+      backdrop-filter: none;
+    }
+    .gallery-image {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: 16px;
+    }
+    .gallery-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+    .gallery-nav-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .gallery-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .gallery-counter {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 15px;
+      font-size: 14px;
+    }
+    /* 新增：攻略匹配窗口样式（和登录框一致的液态玻璃） */
+    .route-match-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      width: 90%;
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.1); /* 半透浅背景，避免纯白 */
+      backdrop-filter: blur(50px); /* 液态玻璃模糊 */
+      border: 1px solid rgba(255, 255, 255, 0.2); /* 浅边框 */
+      border-radius: 26px; /* 和登录框一样的圆角 */
+      padding: 40px 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      color: white;
+      display: none; /* 默认隐藏，点试用才显示 */
+    }
+    .route-match-box h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .route-form-item {
+      margin-bottom: 20px;
+    }
+    .route-form-item label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    /* 修复下拉框显示问题：给输入框/下拉框加样式 */
+    .route-form-item input,
+    .route-form-item select {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: white; /* 输入框文字白色 */
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .route-form-item input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .route-form-item input:focus,
+    .route-form-item select:focus {
+      border-color: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    /* 关键：给下拉框选项加颜色，解决看不见的问题 */
+    .route-form-item select option {
+      color: #333; /* 选项文字黑色，背景白色，能看清 */
+      background: white;
+    }
+    .match-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .match-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    /* 攻略结果样式 */
+    .result-box {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      display: none;
+    }
+    .result-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      border-left: 3px solid rgba(255, 255, 255, 0.8);
+      padding-left: 10px;
+    }
+    .result-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+    }
+    .result-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    .result-route {
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre-line;
+      opacity: 0.9;
+    }
+    /* 关闭攻略窗口按钮 */
+    .close-route-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- 语言切换按钮 -->
+  <div class="lang-switch" onclick="toggleLanguage()">
+    <span id="lang-text">中</span>
+  </div>
+
+  <!-- 帮助按钮 -->
+  <div class="help-btn" onclick="showHelpModal()">
+    <i class="fas fa-question"></i>
+  </div>
+
+  <!-- 探索按钮 -->
+  <div class="explore-btn" onclick="openGallery()">
+    <i class="fas fa-compass"></i>
+    <span id="explore-text">探索海南</span>
+  </div>
+
+  <!-- 登录卡片 -->
+  <div class="login-card">
+    <h2 id="login-title">欢迎来到 DK 旅行</h2>
+    <div class="input-group">
+      <label for="username" id="label-username">用户名</label>
+      <input type="text" id="username" placeholder="请输入用户名">
+    </div>
+    <div class="input-group">
+      <label for="password" id="label-password">密码</label>
+      <input type="password" id="password" placeholder="请输入密码">
+    </div>
+    <div class="forgot-password">
+      <a href="javascript:void(0)" onclick="showForgotPasswordModal()" id="forgot-text">忘记密码？</a>
+    </div>
+    <button class="login-btn" id="btn-login" onclick="handleLogin()">进入</button>
+    <!-- 新增：试用文字（在进入按钮下方） -->
+    <div class="trial-text" onclick="showRouteMatchBox()" id="trial-text">试用</div>
+  </div>
+
+  <!-- 帮助模态框 -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeHelpModal()">&times;</button>
+      <div class="modal-header">
+        <h3 class="modal-title" id="help-title">使用帮助</h3>
+      </div>
+      <div class="help-content" id="help-content">
+        <p>1. 输入用户名和密码即可登录系统</p>
+        <p>2. 点击右下角的探索按钮可以查看海南美景</p>
+        <p>3. 忘记密码可通过邮箱重置</p>
+        <p>4. 支持中英文切换，点击左上角语言按钮即可</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忘记密码模态框 -->
+  <div id="forgotPasswordModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeForgotPasswordModal()">&times;</button>
+      <div class="modal-header">
+        <h3 class="modal-title" id="forgot-title">重置密码</h3>
+      </div>
+      <input type="email" id="resetEmail" class="reset-input" placeholder="请输入注册邮箱" id="email-placeholder">
+      <button class="reset-btn" onclick="handleForgotPassword()" id="reset-btn">发送重置链接</button>
+    </div>
+  </div>
+
+  <!-- 图片画廊模态框 -->
+  <div id="galleryModal" class="modal gallery-modal">
+    <div class="gallery-content">
+      <img src="" alt="海南美景" class="gallery-image" id="galleryImage">
+      <div class="gallery-nav">
+        <button class="gallery-nav-btn" onclick="prevImage()"><i class="fas fa-chevron-left"></i></button>
+        <button class="gallery-nav-btn" onclick="nextImage()"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div class="gallery-counter" id="galleryCounter">1/5</div>
+    </div>
+  </div>
+
+  <!-- 新增：攻略匹配窗口（液态玻璃样式，默认隐藏） -->
+  <div class="route-match-box" id="routeMatchBox">
+    <button class="close-route-btn" onclick="closeRouteMatchBox()">&times;</button>
+    <h2 id="route-title">定制你的海南路线</h2>
+    <div class="route-form-item">
+      <label id="label-peopleNum">有几个人出行？</label>
+      <input type="number" id="peopleNum" min="1" placeholder="请输入出行人数" required id="placeholder-peopleNum">
+    </div>
+    <div class="route-form-item">
+      <label id="label-travelDays">玩几天？</label>
+      <input type="number" id="travelDays" min="1" placeholder="请输入出行天数" required id="placeholder-travelDays">
+    </div>
+    <div class="route-form-item">
+      <label id="label-destination">你想去哪里？</label>
+      <select id="destination" required>
+        <option value="" id="option-default">请选择目的地</option>
+        <option value="三亚">三亚</option>
+        <option value="万宁">万宁</option>
+        <option value="海口">海口</option>
+        <option value="东线环岛">海口+万宁+三亚 东线环岛</option>
+        <option value="全岛环岛">全岛环岛自驾</option>
+      </select>
+    </div>
+    <button type="button" class="match-btn" id="matchBtn" id="btn-match">匹配最优路线</button>
+    
+    <!-- 路线结果展示区 -->
+    <div class="result-box" id="resultBox">
+      <h3 class="result-title" id="resultTitle"></h3>
+      <div class="result-tags" id="resultTags"></div>
+      <p class="result-desc" id="resultDesc"></p>
+      <div class="result-route" id="resultRoute"></div>
+    </div>
+  </div>
+
+  <script>
+    // 国际化配置
+    const i18n = {
+      zh: {
+        loginTitle: "欢迎来到 DK 旅行",
+        username: "用户名",
+        password: "密码",
+        placeholderUsername: "请输入用户名",
+        placeholderPassword: "请输入密码",
+        forgotText: "忘记密码？",
+        btnLogin: "进入",
+        helpTitle: "使用帮助",
+        helpContent: "1. 输入用户名和密码即可登录系统\n2. 点击右下角的探索按钮可以查看海南美景\n3. 忘记密码可通过邮箱重置\n4. 支持中英文切换，点击左上角语言按钮即可",
+        forgotTitle: "重置密码",
+        emailPlaceholder: "请输入注册邮箱",
+        resetBtn: "发送重置链接",
+        exploreText: "探索海南",
+        langText: "中",
+        routeTitle: "定制你的海南路线",
+        peopleNumLabel: "有几个人出行？",
+        travelDaysLabel: "玩几天？",
+        destinationLabel: "你想去哪里？",
+        peopleNumPlaceholder: "请输入出行人数",
+        travelDaysPlaceholder: "请输入出行天数",
+        destinationPlaceholder: "请选择目的地",
+        matchBtnText: "匹配最优路线",
+        trialText: "试用",
+        // 下拉框选项中文
+        optionSanya: "三亚",
+        optionWanning: "万宁",
+        optionHaikou: "海口",
+        optionEastRing: "海口+万宁+三亚 东线环岛",
+        optionWholeIsland: "全岛环岛自驾"
+      },
+      en: {
+        loginTitle: "Welcome to DK Travel",
+        username: "Username",
+        password: "Password",
+        placeholderUsername: "Please enter username",
+        placeholderPassword: "Please enter password",
+        forgotText: "Forgot password?",
+        btnLogin: "Enter",
+        helpTitle: "Help",
+        helpContent: "1. Enter username and password to login\n2. Click explore button to view Hainan scenery\n3. Reset password via email\n4. Support Chinese/English switch",
+        forgotTitle: "Reset Password",
+        emailPlaceholder: "Please enter your email",
+        resetBtn: "Send Reset Link",
+        exploreText: "Explore Hainan",
+        langText: "EN",
+        routeTitle: "Customize Your Hainan Route",
+        peopleNumLabel: "How many people are traveling?",
+        travelDaysLabel: "How many days to play?",
+        destinationLabel: "Where do you want to go?",
+        peopleNumPlaceholder: "Enter number of people",
+        travelDaysPlaceholder: "Enter number of days",
+        destinationPlaceholder: "Select destination",
+        matchBtnText: "Match Best Route",
+        trialText: "Trial",
+        // 下拉框选项英文
+        optionSanya: "Sanya",
+        optionWanning: "Wanning",
+        optionHaikou: "Haikou",
+        optionEastRing: "East Ring: Haikou+Wanning+Sanya",
+        optionWholeIsland: "Whole Island Self-drive"
+      }
+    };
+
+    // 当前语言
+    let currentLang = 'zh';
+    // 图片轮播数据
+    const hainanImages = [
+      { url: 'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?w=1920', title: 'Pool' },
+      { url: 'https://images.unsplash.com/photo-1540206395-68808572332f?w=1920', title: 'Pool' },
+      { url: 'https://images.pexels.com/photos/1450351/pexels-photo-1450351.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1', title: '三亚蜈支洲岛' },
+      { url: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1920', title: 'Forest' },
+      { url: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1920', title: 'Forest' }
+    ];
+    // 当前图片索引
+    let currentImageIndex = 0;
+
+    // 攻略匹配数据（中英文适配版）
+    const travelPlans = [
+      {
+        title: {
+          zh: "海南5天4晚东线精华游",
+          en: "Hainan 5D4N East Line Essence Tour"
+        },
+        matchDays: 5,
+        matchDest: ["东线环岛", "海口", "万宁", "三亚"],
+        desc: {
+          zh: "适合首次来海南的新手游客，涵盖海口人文、万宁冲浪、三亚海景，行程轻松不绕路，吃住玩一站式全覆盖",
+          en: "Suitable for first-time visitors to Hainan, covering Haikou culture, Wanning surfing, Sanya sea view, easy itinerary without detours, one-stop accommodation, food and play"
+        },
+        tags: {
+          zh: ["#海南旅游", "#三亚攻略", "#5天4晚", "#东线环岛", "#新手必看"],
+          en: ["#HainanTravel", "#SanyaGuide", "#5D4N", "#EastRingTour", "#ForBeginners"]
+        },
+        route: {
+          zh: "D1 海口：骑楼老街→老爸茶→假日海滩→海大南门夜市\nD2 海口→万宁：日月湾冲浪→石梅湾\nD3 万宁→三亚：亚龙湾→热带天堂森林公园\nD4 三亚：蜈支洲岛→椰梦长廊日落\nD5 南山文化旅游区→免税城→返程",
+          en: "D1 Haikou: Qilou Old Street → Dad's Tea → Holiday Beach → Hainan University South Gate Night Market\nD2 Haikou→Wanning: Riyue Bay Surfing → Shimei Bay\nD3 Wanning→Sanya: Yalong Bay → Tropical Paradise Forest Park\nD4 Sanya: Wuzhizhou Island → Coconut Dream Corridor Sunset\nD5 Nanshan Cultural Tourism Zone → Duty-free City → Return"
+        }
+      },
+      {
+        title: {
+          zh: "三亚3天2晚躺平度假游",
+          en: "Sanya 3D2N Relaxing Resort Tour"
+        },
+        matchDays: 3,
+        matchDest: ["三亚"],
+        desc: {
+          zh: "专为不想赶路、只想放松度假的人群设计，少景点多体验，吃住一线海景，轻松省心不折腾",
+          en: "Designed for people who don't want to rush, only want to relax and vacation, fewer scenic spots and more experiences, accommodation and food with front-line sea view, easy and worry-free"
+        },
+        tags: {
+          zh: ["#三亚旅游", "#3天2晚", "#度假攻略", "#懒人旅行", "#海边度假"],
+          en: ["#SanyaTravel", "#3D2N", "#ResortGuide", "#LazyTravel", "#BeachResort"]
+        },
+        route: {
+          zh: "D1 抵达三亚→入住海边酒店→沙滩休闲→椰子鸡晚餐\nD2 蜈支洲岛/西岛玩水→椰梦长廊日落\nD3 南山寺/天涯海角→采购特产→返程",
+          en: "D1 Arrive in Sanya → Check in beach hotel → Beach leisure → Coconut Chicken Dinner\nD2 Wuzhizhou Island/Xi Island Water Activities → Coconut Dream Corridor Sunset\nD3 Nanshan Temple/Tianya Haijiao → Buy souvenirs → Return"
+        }
+      },
+      {
+        title: {
+          zh: "海南环岛自驾7天深度游",
+          en: "Hainan Island Loop Self-drive 7D In-depth Tour"
+        },
+        matchDays: 7,
+        matchDest: ["全岛环岛"],
+        desc: {
+          zh: "适合自由行、摄影爱好者、深度玩家，海南高速免费，全程沿海公路，打卡小众网红景点与原生态海湾",
+          en: "Suitable for independent travelers, photography enthusiasts, in-depth players, Hainan highways are free, the whole journey is coastal highway, check in niche internet-famous scenic spots and original ecological bays"
+        },
+        tags: {
+          zh: ["#海南自驾", "#环岛旅行", "#7天攻略", "#小众景点", "#自驾游"],
+          en: ["#HainanSelfDrive", "#IslandLoopTour", "#7DGuide", "#NicheSpots", "#SelfDriveTour"]
+        },
+        route: {
+          zh: "D1 海口集合→火山口地质公园\nD2 海口→文昌→东郊椰林\nD3 琼海→万宁→石梅湾\nD4 陵水分界洲岛→三亚\nD5 三亚深度游玩\nD6 尖峰岭→鱼鳞洲\nD7 儋州→海口返程",
+          en: "D1 Haikou Gathering → Volcano Crater Geopark\nD2 Haikou→Wenchang→East Suburb Coconut Grove\nD3 Qionghai→Wanning→Shimei Bay\nD4 Lingshui Boundary Island → Sanya\nD5 Sanya In-depth Tour\nD6 Jianfeng Ridge → Yulinzhou\nD7 Danzhou→Haikou Return"
+        }
+      },
+      {
+        title: {
+          zh: "海南亲子游4天轻松攻略",
+          en: "Hainan Family-friendly 4D Easy Tour"
+        },
+        matchDays: 4,
+        matchDest: ["三亚"],
+        desc: {
+          zh: "专为带娃家庭定制，节奏缓慢、景点安全、玩水丰富、排队少，亲子友好型轻松行程，孩子开心家长不累",
+          en: "Customized for families with kids, slow pace, safe scenic spots, rich water activities, less queuing, family-friendly easy itinerary, kids happy and parents not tired"
+        },
+        tags: {
+          zh: ["#海南亲子游", "#三亚亲子", "#带娃旅行", "#家庭攻略", "#儿童友好"],
+          en: ["#HainanFamilyTravel", "#SanyaFamily", "#TravelWithKids", "#FamilyGuide", "#KidFriendly"]
+        },
+        route: {
+          zh: "D1 抵达三亚→入住海景酒店→沙滩玩沙\nD2 亚特兰蒂斯水世界/水族馆\nD3 亚龙湾沙滩→热带天堂森林公园\nD4 市区休整→返程",
+          en: "D1 Arrive in Sanya → Check in sea view hotel → Play sand on beach\nD2 Atlantis Water World/Aquarium\nD3 Yalong Bay Beach → Tropical Paradise Forest Park\nD4 Urban rest → Return"
+        }
+      },
+      {
+        title: {
+          zh: "海南美食2天深度探店",
+          en: "Hainan Food 2D In-depth Exploration Tour"
+        },
+        matchDays: 2,
+        matchDest: ["海口", "三亚"],
+        desc: {
+          zh: "不逛景点只吃美食，覆盖海口、三亚本地特色小吃与老字号，吃货一站式打卡，从早吃到晚不重样",
+          en: "No scenic spots, only food, covering Haikou and Sanya local specialty snacks and time-honored brands, one-stop check-in for foodies, eating from morning to night without repetition"
+        },
+        tags: {
+          zh: ["#海南美食", "#三亚美食", "#吃货攻略", "#小吃探店", "#本地味道"],
+          en: ["#HainanFood", "#SanyaFood", "#FoodieGuide", "#SnackExploration", "#LocalFlavor"]
+        },
+        route: {
+          zh: "D1 海口：水巷口→骑楼老街→海南粉→老爸茶→清补凉→炸炸→海大南门夜市\nD2 三亚：第一市场→椰子鸡→和乐蟹→文昌鸡→糟粕醋→返程",
+          en: "D1 Haikou: Shuixiangkou → Qilou Old Street → Hainan Noodles → Dad's Tea → Qingbuliang → Fried Snacks → Hainan University South Gate Night Market\nD2 Sanya: First Market → Coconut Chicken → Hele Crab → Wenchang Chicken → Zaopo Vinegar → Return"
+        }
+      },
+      {
+        title: {
+          zh: "海南冬季避寒4天休闲游",
+          en: "Hainan Winter Escape 4D Leisure Tour"
+        },
+        matchDays: 4,
+        matchDest: ["三亚"],
+        desc: {
+          zh: "适合冬季怕冷人群，主打温暖阳光、沙滩休闲，全程慢节奏，避寒度假两不误，温暖过冬首选",
+          en: "Suitable for people who are afraid of cold in winter, focusing on warm sunshine and beach leisure, slow pace throughout the whole journey, both winter escape and vacation, the first choice for warm winter"
+        },
+        tags: {
+          zh: ["#海南避寒", "#冬季旅游", "#三亚过冬", "#暖冬旅行", "#休闲度假"],
+          en: ["#HainanWinterEscape", "#WinterTravel", "#SanyaWinter", "#WarmWinterTrip", "#LeisureResort"]
+        },
+        route: {
+          zh: "D1 抵达三亚→入住酒店→海边晒太阳\nD2 西岛休闲游→椰梦长廊\nD3 亚龙湾海滩深度休闲\nD4 南山文化旅游区→轻松返程",
+          en: "D1 Arrive in Sanya → Check in hotel → Sunbathe by the sea\nD2 Xi Island Leisure Tour → Coconut Dream Corridor\nD3 Yalong Bay Beach In-depth Leisure\nD4 Nanshan Cultural Tourism Zone → Easy Return"
+        }
+      },
+      {
+        title: {
+          zh: "万宁小众2天1晚冲浪游",
+          en: "Wanning Niche 2D1N Surfing Tour"
+        },
+        matchDays: 2,
+        matchDest: ["万宁"],
+        desc: {
+          zh: "适合喜欢清净、拍照、冲浪的年轻人，人少景美，消费更低，文艺海边小镇专属玩法",
+          en: "Suitable for young people who like tranquility, photography and surfing, fewer people and beautiful scenery, lower consumption, exclusive gameplay in literary seaside town"
+        },
+        tags: {
+          zh: ["#万宁旅游", "#日月湾", "#石梅湾", "#小众海边", "#冲浪攻略"],
+          en: ["#WanningTravel", "#RiyueBay", "#ShimeiBay", "#NicheBeach", "#SurfingGuide"]
+        },
+        route: {
+          zh: "D1 抵达万宁→日月湾冲浪体验→海边公路拍照\nD2 石梅湾→加井岛浮潜→返程",
+          en: "D1 Arrive in Wanning → Riyue Bay Surfing Experience → Seaside Highway Photography\nD2 Shimei Bay → Jiajing Island Snorkeling → Return"
+        }
+      }
+    ];
+
+    // 初始化背景轮播
+    function initSlideshow() {
+      const slideshow = document.createElement('div');
+      slideshow.className = 'slideshow';
+      document.body.appendChild(slideshow);
+
+      hainanImages.forEach((img, index) => {
+        const slide = document.createElement('div');
+        slide.className = `slide ${index === 0 ? 'active' : ''}`;
+        slide.style.backgroundImage = `url(${img.url})`;
+        slideshow.appendChild(slide);
+      });
+    }
+
+    // 切换背景轮播
+    function changeSlide() {
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach(slide => slide.classList.remove('active'));
+      
+      currentImageIndex = (currentImageIndex + 1) % hainanImages.length;
+      slides[currentImageIndex].classList.add('active');
+    }
+
+    // 开始背景轮播
+    function startSlideshow() {
+      setInterval(changeSlide, 5000);
+    }
+
+    // 切换语言
+    function toggleLanguage() {
+      currentLang = currentLang === 'zh' ? 'en' : 'zh';
+      updateLanguage();
+      // 如果攻略窗口已打开，同步更新结果文本
+      if (document.getElementById('resultBox').style.display === 'block') {
+        updateRouteResultLanguage();
+      }
+    }
+
+    // 更新页面语言（核心修复：覆盖攻略窗口所有文本）
+    function updateLanguage() {
+      // 登录区文本
+      document.getElementById('login-title').textContent = i18n[currentLang].loginTitle;
+      document.getElementById('label-username').textContent = i18n[currentLang].username;
+      document.getElementById('label-password').textContent = i18n[currentLang].password;
+      document.getElementById('username').placeholder = i18n[currentLang].placeholderUsername;
+      document.getElementById('password').placeholder = i18n[currentLang].placeholderPassword;
+      document.getElementById('forgot-text').textContent = i18n[currentLang].forgotText;
+      document.getElementById('btn-login').textContent = i18n[currentLang].btnLogin;
+      document.getElementById('help-title').textContent = i18n[currentLang].helpTitle;
+      document.getElementById('help-content').innerText = i18n[currentLang].helpContent;
+      document.getElementById('forgot-title').textContent = i18n[currentLang].forgotTitle;
+      document.getElementById('resetEmail').placeholder = i18n[currentLang].emailPlaceholder;
+      document.getElementById('reset-btn').textContent = i18n[currentLang].resetBtn;
+      document.getElementById('explore-text').textContent = i18n[currentLang].exploreText;
+      document.getElementById('lang-text').textContent = i18n[currentLang].langText;
+      document.getElementById('trial-text').textContent = i18n[currentLang].trialText;
+
+      // 攻略窗口文本
+      document.getElementById('route-title').textContent = i18n[currentLang].routeTitle;
+      document.getElementById('label-peopleNum').textContent = i18n[currentLang].peopleNumLabel;
+      document.getElementById('label-travelDays').textContent = i18n[currentLang].travelDaysLabel;
+      document.getElementById('label-destination').textContent = i18n[currentLang].destinationLabel;
+      document.getElementById('peopleNum').placeholder = i18n[currentLang].peopleNumPlaceholder;
+      document.getElementById('travelDays').placeholder = i18n[currentLang].travelDaysPlaceholder;
+      document.getElementById('option-default').textContent = i18n[currentLang].destinationPlaceholder;
+      document.getElementById('matchBtn').textContent = i18n[currentLang].matchBtnText;
+
+      // 更新下拉框选项文本
+      const destSelect = document.getElementById('destination');
+      destSelect.options[1].text = i18n[currentLang].optionSanya;
+      destSelect.options[2].text = i18n[currentLang].optionWanning;
+      destSelect.options[3].text = i18n[currentLang].optionHaikou;
+      destSelect.options[4].text = i18n[currentLang].optionEastRing;
+      destSelect.options[5].text = i18n[currentLang].optionWholeIsland;
+    }
+
+    // 同步更新攻略结果的语言
+    function updateRouteResultLanguage() {
+      const peopleNum = document.getElementById('peopleNum').value;
+      const travelDays = parseInt(document.getElementById('travelDays').value);
+      const destination = document.getElementById('destination').value;
+
+      let matchedPlan = null;
+      const destMatchPlans = travelPlans.filter(plan => plan.matchDest.includes(destination));
+      
+      if (destMatchPlans.length > 0) {
+        matchedPlan = destMatchPlans.reduce((prev, curr) => {
+          const prevDiff = Math.abs(prev.matchDays - travelDays);
+          const currDiff = Math.abs(curr.matchDays - travelDays);
+          return currDiff < prevDiff ? curr : prev;
+        });
+      } else {
+        matchedPlan = travelPlans.reduce((prev, curr) => {
+          const prevDiff = Math.abs(prev.matchDays - travelDays);
+          const currDiff = Math.abs(curr.matchDays - travelDays);
+          return currDiff < prevDiff ? curr : prev;
+        });
+      }
+
+      // 重新渲染结果（对应当前语言）
+      document.getElementById('resultTitle').textContent = matchedPlan.title[currentLang];
+      document.getElementById('resultDesc').textContent = `${currentLang === 'zh' ? '出行人数：' : 'Number of people：'}${peopleNum}${currentLang === 'zh' ? '人 | 出行天数：' : ' | Number of days：'}${travelDays}${currentLang === 'zh' ? '天 | ' : ' days | '}${matchedPlan.desc[currentLang]}`;
+      const tagsHtml = matchedPlan.tags[currentLang].map(tag => `<span class="tag">${tag}</span>`).join('');
+      document.getElementById('resultTags').innerHTML = tagsHtml;
+      document.getElementById('resultRoute').textContent = matchedPlan.route[currentLang];
+    }
+
+    // 显示帮助模态框
+    function showHelpModal() {
+      document.getElementById('helpModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭帮助模态框
+    function closeHelpModal() {
+      document.getElementById('helpModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // 显示忘记密码模态框
+    function showForgotPasswordModal() {
+      document.getElementById('forgotPasswordModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭忘记密码模态框
+    function closeForgotPasswordModal() {
+      document.getElementById('forgotPasswordModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // 处理忘记密码
+    function handleForgotPassword() {
+      const email = document.getElementById('resetEmail').value;
+      if (!email) {
+        alert(currentLang === 'zh' ? '请输入邮箱地址' : 'Please enter email address');
+        return;
+      }
+      alert(currentLang === 'zh' ? '重置链接已发送至您的邮箱' : 'Reset link sent to your email');
+      closeForgotPasswordModal();
+    }
+
+    // 处理登录
+    function handleLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      if (!username || !password) {
+        alert(currentLang === 'zh' ? '请输入用户名和密码' : 'Please enter username and password');
+        return;
+      }
+      
+      alert(currentLang === 'zh' ? '登录成功！欢迎来到 DK 旅行' : 'Login successful! Welcome to DK Travel');
+    }
+
+    // 打开图片画廊
+    function openGallery() {
+      const modal = document.getElementById('galleryModal');
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      currentImageIndex = 0;
+      updateGalleryImage();
+    }
+
+    // 关闭图片画廊（按ESC也可关闭）
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.getElementById('galleryModal').style.display = 'none';
+        document.getElementById('helpModal').style.display = 'none';
+        document.getElementById('forgotPasswordModal').style.display = 'none';
+        document.getElementById('routeMatchBox').style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+      // 左右箭头切换图片
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'ArrowRight') nextImage();
+    });
+
+    // 更新画廊图片
+    function updateGalleryImage() {
+      const img = document.getElementById('galleryImage');
+      img.src = hainanImages[currentImageIndex].url;
+      img.alt = hainanImages[currentImageIndex].title;
+      document.getElementById('galleryCounter').textContent = `${currentImageIndex + 1}/${hainanImages.length}`;
+    }
+
+    // 上一张图片
+    function prevImage() {
+      currentImageIndex = (currentImageIndex - 1 + hainanImages.length) % hainanImages.length;
+      updateGalleryImage();
+    }
+
+    // 下一张图片
+    function nextImage() {
+      currentImageIndex = (currentImageIndex + 1) % hainanImages.length;
+      updateGalleryImage();
+    }
+
+    // 点击模态框外部关闭
+    window.onclick = function(event) {
+      const modals = document.querySelectorAll('.modal');
+      modals.forEach(modal => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+          document.body.style.overflow = 'auto';
+        }
+      });
+    }
+
+    // 新增：显示攻略匹配窗口
+    function showRouteMatchBox() {
+      document.getElementById('routeMatchBox').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      // 打开时同步语言
+      updateLanguage();
+    }
+
+    // 新增：关闭攻略匹配窗口
+    function closeRouteMatchBox() {
+      document.getElementById('routeMatchBox').style.display = 'none';
+      document.getElementById('resultBox').style.display = 'none'; // 同时隐藏结果
+      document.body.style.overflow = 'auto';
+    }
+
+    // 新增：攻略匹配逻辑（适配多语言）
+    document.getElementById('matchBtn').addEventListener('click', function() {
+      const peopleNum = document.getElementById('peopleNum').value;
+      const travelDays = parseInt(document.getElementById('travelDays').value);
+      const destination = document.getElementById('destination').value;
+
+      if (!peopleNum || !travelDays || !destination) {
+        alert(currentLang === 'zh' ? '请完整填写所有信息后再匹配' : 'Please fill in all information before matching');
+        return;
+      }
+
+      let matchedPlan = null;
+      const destMatchPlans = travelPlans.filter(plan => plan.matchDest.includes(destination));
+      
+      if (destMatchPlans.length > 0) {
+        matchedPlan = destMatchPlans.reduce((prev, curr) => {
+          const prevDiff = Math.abs(prev.matchDays - travelDays);
+          const currDiff = Math.abs(curr.matchDays - travelDays);
+          return currDiff < prevDiff ? curr : prev;
+        });
+      } else {
+        matchedPlan = travelPlans.reduce((prev, curr) => {
+          const prevDiff = Math.abs(prev.matchDays - travelDays);
+          const currDiff = Math.abs(curr.matchDays - travelDays);
+          return currDiff < prevDiff ? curr : prev;
+        });
+      }
+
+      // 渲染结果（根据当前语言）
+      document.getElementById('resultTitle').textContent = matchedPlan.title[currentLang];
+      document.getElementById('resultDesc').textContent = `${currentLang === 'zh' ? '出行人数：' : 'Number of people：'}${peopleNum}${currentLang === 'zh' ? '人 | 出行天数：' : ' | Number of days：'}${travelDays}${currentLang === 'zh' ? '天 | ' : ' days | '}${matchedPlan.desc[currentLang]}`;
+      const tagsHtml = matchedPlan.tags[currentLang].map(tag => `<span class="tag">${tag}</span>`).join('');
+      document.getElementById('resultTags').innerHTML = tagsHtml;
+      document.getElementById('resultRoute').textContent = matchedPlan.route[currentLang];
+      document.getElementById('resultBox').style.display = 'block';
+    });
+
+    // 页面加载初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      initSlideshow();
+      updateLanguage();
+      startSlideshow();
+    });
+  </script>
+</body>
+</html>
